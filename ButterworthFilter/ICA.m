@@ -55,48 +55,71 @@ R_p = E * D^-0.5 * E' * c_x;
 Z = cov(R_p');
 
 figure;
-subplot(3, 1, 1);
+subplot(4, 1, 1);
 plot(R');
-subplot(3, 1, 2);
+title('Raw Signal')
+subplot(4, 1, 2);
 plot(R_p');
+title('Whitened and Centered Data');
 
 %% FastICA Algorithm
-N = Components; %number of desired components
-C = N;
+%N = Components; %number of desired components
+N = Components;
+C = 2;
 M = Col;
 X = R_p;
 one_vec = ones(M, 1);
-W = zeros(C, N);
+W = zeros(N, C);
 for p = 1:C
-    W_p = rand(1, N);
-   while abs(W_p - W_p) > 0.000001
-       W_p = 1/M*X*tanh(W_p'*X)'-1/M*diff(tanh(W_p'*X))*one_vec*W_p;
+    W_p = rand(N, 1);
+    W_p = W_p/norm(W_p,2);
+    W_0 = rand(N, 1);
+    W_0 = W_0/norm(W_0,2);
+   while abs(abs(W_0'*W_p)-1) > 0.000001
+       %X = 2
+       W_0 = W_p;
+       %W_p = 1/M*X*tanh(W_p*X)'-1/M*diff(tanh(W_p*X))*one_vec*W_p;
+       W_p = 1/M*X*tanh(W_p'*X)'-1/M*(1-tanh(W_p'*X).^2)*one_vec*W_p;
        for j = 1:p-1
            if p ~= 1
-            W_p = W_p - W(j, :)*W_p'*W(j, :);
+            W_p = W_p - W(:, j)*W_p'*W(:, j);
            end
        end
        W_p = W_p /norm(W_p, 2);
    end
-   W(p, :) = W_p;
+   W(:, p) = W_p;
 end
 S =W'*X;
 
-subplot(3,1,3);
+subplot(4,1,3);
 plot(S');
+title('FastICA data');
 
 %% Filter ICA Data Using Kalman Filter
 [R, C] = size(S);
 RS2 = zeros(R, C);
 
- for i=1:C
-     S = 5;
+ for i=1:R % R = 200;Q = 0.001;
+     X_s = 1;
      P = 1;
-    for j=1:R
-          RS2(j, i) = S;
-          [S, P] = KalmanFilter(S, P, RawSignal(j, i)); 
+    for j=1:C
+          RS2(i, j) = X_s;
+          [X_s, P] = KalmanFilter(X_s, P, S(i, j)); 
     end
  end
 
+subplot(4,1,4);
+plot(RS2');
+title('ICA/Kalman Filtered Data');
+
+
 figure;
-plot(RS2);
+subplot(3, 1, 1);
+plot(CLEANSignal(:, 1));
+title('Clean Data')
+subplot(3, 1, 2);
+plot(RS2(1, :));
+title('ICA/Kalman Filtered Data');
+subplot(3, 1, 3);
+plot(RawSignal(:, 1));
+title('Raw Data');

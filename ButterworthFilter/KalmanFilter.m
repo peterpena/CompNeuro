@@ -3,10 +3,11 @@ function [ X, P ] = KalmanFilter( X_p, P_p, Z_p)
 %   Detailed explanation goes here
 
 %% Initialize Matrices
-R = 1;
+%R = 1;
+R = 200;
+Q = 0.001;
+%Q = 0.000001;
 
-%Q = 0.001;
-Q = 0.0001;
 %% Belief Update
 X_tilde = X_p;
 P_tilde = P_p + Q;
